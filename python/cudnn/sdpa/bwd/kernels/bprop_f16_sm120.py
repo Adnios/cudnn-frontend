@@ -1368,8 +1368,8 @@ def _dot_do_o_kernel(
         if row < q_left:
             g_off = base + row * row_stride + col0
             for pg in cutlass.range_constexpr(n_pages):
-                ov = (o_ptr + g_off + pg * page).load(count=_COPY_ELEMS)
-                dov = (do_ptr + g_off + pg * page).load(count=_COPY_ELEMS)
+                ov = prims.load_ext(o_ptr + g_off + pg * page, dtype=cutlass.Int32, count=4).bitcast(STORAGE_DTYPE)
+                dov = prims.load_ext(do_ptr + g_off + pg * page, dtype=cutlass.Int32, count=4).bitcast(STORAGE_DTYPE)
                 for kk in cutlass.range_constexpr(_COPY_ELEMS):
                     acc = acc + ov[kk].to(cutlass.Float32) * dov[kk].to(cutlass.Float32)
         # Allreduce over the tpr threads sharing the row (lane-contiguous).
@@ -1495,7 +1495,7 @@ def _convert_dq_kernel(
                     addr = dqa_base + (t_r + jm * 8) * (H * d) + t_c * 2 + jn * 64
                 else:
                     addr = dqa_base + (t_r + (t_c // 16) * 8 + i_pair * 16) * (H * d) + (t_c % 16) * 2
-                pv = (dqa_ptr + addr).load(count=2)
+                pv = prims.load_ext(dqa_ptr + addr, dtype=cutlass.Float32, count=2)
                 frag[hv * 2 + 0] = pv[0] * attn_scale
                 frag[hv * 2 + 1] = pv[1] * attn_scale
             r0 = wq * 16 + rep * 16 * WM_DQ + g_lane
