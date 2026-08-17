@@ -684,16 +684,13 @@ class SM120FusedMultiHeadAttentionFP16Backward:
         do_full = tma_mbar.subview(4)
 
         if warp == self.load_warp_id:
+            if lane < 5:
+                prims.mbarrier_init(tma_mbar.subview(lane), 1)
             if prims.elect_sync():
                 prims.prefetch_tensormap(tma_k_desc.get_ptr())
                 prims.prefetch_tensormap(tma_v_desc.get_ptr())
                 prims.prefetch_tensormap(tma_q_desc.get_ptr())
                 prims.prefetch_tensormap(tma_do_desc.get_ptr())
-                prims.mbarrier_init(k_mbar, 1)
-                prims.mbarrier_init(v_mbar, 1)
-                prims.mbarrier_init(q_full, 1)
-                prims.mbarrier_init(q_full.subview(1), 1)
-                prims.mbarrier_init(do_full, 1)
         prims.fence_mbarrier_init()
         prims.barrier_cta_sync(0)
 
